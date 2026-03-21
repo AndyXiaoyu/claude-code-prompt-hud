@@ -2,7 +2,7 @@
 
 CONFIG="$HOME/.claude-code-prompt-hud/config"
 
-[ -f "$CONFIG" ] && source <(tr -d '\r' < "$CONFIG")
+[ -f "$CONFIG" ] && source "$CONFIG"
 HUD_LANG=${HUD_LANG:-zh}
 HUD_MODE=${HUD_MODE:-text}
 HUD_FIELDS=${HUD_FIELDS:-MODEL,CTX,TIME,COST,DIFF,TOKEN,REQ,USAGE,DIR,PATH,BRANCH,VER,CPU,MEM}
@@ -180,8 +180,8 @@ case "$1" in
     echo "claude-code-prompt-hud CLI"
     echo ""
     echo "用法:"
-    echo "  hud lang [zh|en]       切换语言（当前: $HUD_LANG）"
-    echo "  hud mode [text|emoji]  切换显示模式（当前: $HUD_MODE）"
+    printf "  hud lang [zh|en]       切换语言（当前: %s）\n" "$HUD_LANG"
+    printf "  hud mode [text|emoji]  切换显示模式（当前: %s）\n" "$HUD_MODE"
     echo "  hud fields             交互式配置显示字段"
     echo "  hud tree [left|right]  分屏显示目录树（默认左侧）"
     ;;
