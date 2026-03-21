@@ -4,12 +4,12 @@ A real-time status line for [Claude Code](https://claude.ai/code) — displays l
 
 **Text mode:**
 ```
-模型:opus ｜ 上下文:3 ｜ 时长:12m ｜ 费用:0.042 ｜ 变更:13 ｜ Token:4200 ｜ 请求:18 ｜ 用量:4200/200k ｜ 目录:my-project ｜ 路径:/Users/me/project ｜ 分支:main ｜ 版本:v0.1 ｜ CPU:23% ｜ 内存:312891
+模型: opus｜上下文: 3｜时长: 12m｜费用: 0.042｜变更: 13｜Token: 4200｜请求: 18｜用量: 4200/200k｜目录: my-project｜路径: /Users/me/project｜分支: main｜版本: v0.1｜CPU: 23%｜内存: 312891
 ```
 
 **Emoji mode:**
 ```
-🤖 opus ｜ 📄 3 ｜ 🕙 12m ｜ 💲 0.042 ｜ +240 -43 ｜ ⚡ 4200 ｜ 🔄 18 ｜ 📊 4200/200k ｜ 📖 my-project ｜ 📂 /Users/me/project ｜ ⎇  main ｜ 🏷️  v0.1 ｜ ⚙️  23% ｜ 💾 312891
+🤖 opus｜📄 3｜🕙 12m｜💲 0.042｜+240 -43｜⚡ 4200｜🔄 18｜📊 4200/200k｜📖 my-project｜📂 /Users/me/project｜⎇ main｜🏷️ v0.1｜⚙️ 23%｜💾 312891
 ```
 
 ---

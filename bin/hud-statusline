@@ -36,9 +36,9 @@ emoji_icon() {
     USAGE)  echo "📊" ;;
     DIR)    echo "📖" ;;
     PATH)   echo "📂" ;;
-    BRANCH) echo "⎇ " ;;
-    VER)    echo "🏷️ " ;;
-    CPU)    echo "⚙️ " ;;
+    BRANCH) echo "⎇" ;;
+    VER)    echo "🏷️" ;;
+    CPU)    echo "⚙️" ;;
     MEM)    echo "💾" ;;
   esac
 }
@@ -48,20 +48,20 @@ out=""
 add() {
   local field="$1" color="$2" label="$3" value="$4"
   on "$field" || return
-  [ -n "$out" ] && out+=" $(c 240)｜$(rst) "
+  [ -n "$out" ] && out+="$(c 240)｜$(rst)"
   if [ "$HUD_MODE" = "emoji" ]; then
     local icon
     icon=$(emoji_icon "$field")
-    out+="$(c $color)${icon}${value}$(rst)"
+    out+="$(c $color)${icon} ${value}$(rst)"
   else
-    out+="$(c $color)${label}:${value}$(rst)"
+    out+="$(c $color)${label}: ${value}$(rst)"
   fi
 }
 
 # DIFF 在 emoji 模式下特殊渲染
 add_diff() {
   on "DIFF" || return
-  [ -n "$out" ] && out+=" $(c 240)｜$(rst) "
+  [ -n "$out" ] && out+="$(c 240)｜$(rst)"
   if [ "$HUD_MODE" = "emoji" ]; then
     local detail
     detail=$(git_diff_detail)
@@ -70,7 +70,7 @@ add_diff() {
     removed=$(echo "$detail" | grep -oE '\-[0-9]+')
     out+="$(c 82)${added}$(rst) $(c 203)${removed}$(rst)"
   else
-    out+="$(c 203)${L_DIFF}:$(git_changes)$(rst)"
+    out+="$(c 203)${L_DIFF}: $(git_changes)$(rst)"
   fi
 }
 
