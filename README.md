@@ -71,7 +71,12 @@ hud mode text        # Text mode: 模型:opus (default)
 hud mode emoji       # Emoji mode: 🤖 opus
 
 hud fields           # Interactive field selector
+
+hud tree             # Split pane file tree (left, default)
+hud tree right       # Split pane file tree (right)
 ```
+
+> **Note:** For `hud tree` to display the correct project directory, make sure to `cd` into your project folder **before** launching Claude Code, then run `! hud tree` inside the Claude Code session.
 
 ### Field Selector (`hud fields`)
 

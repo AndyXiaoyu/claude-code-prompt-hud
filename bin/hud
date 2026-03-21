@@ -127,10 +127,55 @@ cmd_fields() {
   echo "  已保存"
 }
 
+cmd_tree() {
+  local side="${1:-left}"
+
+  local in_tmux=false
+  [ -n "$TMUX" ] && in_tmux=true && TMUX_PANE=$(tmux display-message -p '#{pane_id}' 2>/dev/null)
+
+  if $in_tmux; then
+    if [ "$side" = "left" ]; then
+      tmux split-window -hb "bash ~/.claude-code-prompt-hud/rightpane/files.sh $TMUX_PANE"
+    else
+      tmux split-window -h "bash ~/.claude-code-prompt-hud/rightpane/files.sh $TMUX_PANE"
+    fi
+  elif [ "$TERM_PROGRAM" = "iTerm.app" ]; then
+    if [ "$side" = "left" ]; then
+      osascript -e '
+        tell application "iTerm2"
+          tell current window
+            tell current tab
+              set origSession to current session
+              tell origSession
+                set newSession to (split vertically with default profile)
+              end tell
+              tell origSession to write text "bash ~/.claude-code-prompt-hud/rightpane/files.sh"
+            end tell
+          end tell
+        end tell'
+    else
+      osascript -e '
+        tell application "iTerm2"
+          tell current window
+            tell current tab
+              tell current session
+                set newSession to (split vertically with default profile)
+                tell newSession to write text "bash ~/.claude-code-prompt-hud/rightpane/files.sh"
+              end tell
+            end tell
+          end tell
+        end tell'
+    fi
+  else
+    bash ~/.claude-code-prompt-hud/rightpane/files.sh
+  fi
+}
+
 case "$1" in
   lang)   cmd_lang "$2" ;;
   mode)   cmd_mode "$2" ;;
   fields) cmd_fields ;;
+  tree)   cmd_tree "$2" ;;
   *)
     echo "claude-code-prompt-hud CLI"
     echo ""
@@ -138,5 +183,6 @@ case "$1" in
     echo "  hud lang [zh|en]       切换语言（当前: $HUD_LANG）"
     echo "  hud mode [text|emoji]  切换显示模式（当前: $HUD_MODE）"
     echo "  hud fields             交互式配置显示字段"
+    echo "  hud tree [left|right]  分屏显示目录树（默认左侧）"
     ;;
 esac
