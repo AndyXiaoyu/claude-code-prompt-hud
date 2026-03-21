@@ -16,22 +16,22 @@ A real-time status line for [Claude Code](https://claude.ai/code) — displays l
 
 ## Features
 
-| Field | Emoji | Description |
-|-------|-------|-------------|
-| 模型 / MODEL | 🤖 | Current Claude model |
-| 上下文 / CTX | 📄 | `context/*.md` file count |
-| 时长 / TIME | 🕙 | Session elapsed time |
-| 费用 / COST | 💲 | Estimated cost (tokens × $0.00001) |
-| 变更 / DIFF | `+N -N` | Git added / removed lines |
-| Token / TOKENS | ⚡ | Cumulative tokens this session |
-| 请求 / REQ | 🔄 | Request count |
-| 用量 / USAGE | 📊 | Token usage vs 200k window |
-| 目录 / DIR | 📖 | Current directory name |
-| 路径 / PATH | 📂 | Full working directory path |
-| 分支 / BRANCH | ⎇ | Current git branch |
-| 版本 / VER | 🏷️ | HUD version |
-| CPU | ⚙️ | Total system CPU usage |
-| 内存 / MEM | 💾 | Active memory pages |
+| # | Field | Emoji | Description |
+|---|-------|-------|-------------|
+| 1 | 模型 / MODEL | 🤖 | Current Claude model |
+| 2 | 上下文 / CTX | 📄 | `context/*.md` file count |
+| 3 | 时长 / TIME | 🕙 | Session elapsed time |
+| 4 | 费用 / COST | 💲 | Estimated cost (tokens × $0.00001) |
+| 5 | 变更 / DIFF | `+N -N` | Git added / removed lines |
+| 6 | Token / TOKENS | ⚡ | Cumulative tokens this session |
+| 7 | 请求 / REQ | 🔄 | Request count |
+| 8 | 用量 / USAGE | 📊 | Token usage vs 200k window |
+| 9 | 目录 / DIR | 📖 | Current directory name |
+| 10 | 路径 / PATH | 📂 | Full working directory path |
+| 11 | 分支 / BRANCH | ⎇ | Current git branch |
+| 12 | 版本 / VER | 🏷️ | HUD version |
+| 13 | CPU | ⚙️ | Total system CPU usage |
+| 14 | 内存 / MEM | 💾 | Active memory pages |
 
 ---
 
@@ -81,9 +81,17 @@ hud fields           # Interactive field selector
   [ 1]  ✓  模型/MODEL
   [ 2]  ✓  上下文/CTX
   [ 3]  ✓  时长/TIME
-  ...
+  [ 4]  ✓  费用/COST
+  [ 5]  ✓  变更/DIFF
+  [ 6]  ✓  Token/TOKENS
+  [ 7]  ✓  请求/REQ
+  [ 8]  ✓  用量/USAGE
+  [ 9]  ✓  目录/DIR
   [10]  ✓  路径/PATH
-  ...
+  [11]  ✓  分支/BRANCH
+  [12]  ✓  版本/VER
+  [13]  ✓  CPU/CPU
+  [14]  ✓  内存/MEM
 
   输入编号（exit 退出不保存）: _
 ```
