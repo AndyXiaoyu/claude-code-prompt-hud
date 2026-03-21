@@ -76,7 +76,7 @@ hud tree             # Split pane file tree (left, default)
 hud tree right       # Split pane file tree (right)
 ```
 
-> **Note:** For `hud tree` to display the correct project directory, make sure to `cd` into your project folder **before** launching Claude Code, then run `! hud tree` inside the Claude Code session.
+> **Note:** For `hud tree` to display the correct project directory, make sure to `cd` into your project folder first, then run `hud tree` to open the split pane, and finally launch Claude Code.
 
 ### Field Selector (`hud fields`)
 

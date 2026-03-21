@@ -90,3 +90,4 @@ add CPU   245  "${L_CPU}"    "$(cpu_usage)"
 add MEM   245  "${L_MEM}"    "$(mem_usage)"
 
 printf "%s\n" "$out"
+echo "$PWD" > /tmp/claude_hud_pwd
