@@ -2,7 +2,7 @@
 
 CONFIG="$HOME/.claude-code-prompt-hud/config"
 
-[ -f "$CONFIG" ] && source "$CONFIG"
+[ -f "$CONFIG" ] && source <(tr -d '\r' < "$CONFIG")
 HUD_LANG=${HUD_LANG:-zh}
 HUD_MODE=${HUD_MODE:-text}
 HUD_FIELDS=${HUD_FIELDS:-MODEL,CTX,TIME,COST,DIFF,TOKEN,REQ,USAGE,DIR,PATH,BRANCH,VER,CPU,MEM}
