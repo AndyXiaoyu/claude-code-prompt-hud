@@ -1,0 +1,142 @@
+#!/bin/bash
+
+CONFIG="$HOME/.claude-code-prompt-hud/config"
+
+[ -f "$CONFIG" ] && source "$CONFIG"
+HUD_LANG=${HUD_LANG:-zh}
+HUD_MODE=${HUD_MODE:-text}
+HUD_FIELDS=${HUD_FIELDS:-MODEL,CTX,TIME,COST,DIFF,TOKEN,REQ,USAGE,DIR,PATH,BRANCH,VER,CPU,MEM}
+
+ALL_FIELDS="MODEL CTX TIME COST DIFF TOKEN REQ USAGE DIR PATH BRANCH VER CPU MEM"
+
+field_label() {
+  local f="$1"
+  if [ "$HUD_LANG" = "zh" ]; then
+    case "$f" in
+      MODEL) echo "模型/MODEL" ;; CTX)    echo "上下文/CTX" ;;
+      TIME)  echo "时长/TIME"  ;; COST)   echo "费用/COST"  ;;
+      DIFF)  echo "变更/DIFF"  ;; TOKEN)  echo "Token/TOKEN";;
+      REQ)   echo "请求/REQ"   ;; USAGE)  echo "用量/USAGE" ;;
+      DIR)   echo "目录/DIR"   ;; PATH)   echo "路径/PATH"  ;;
+      BRANCH)echo "分支/BRANCH";; VER)    echo "版本/VER"   ;;
+      CPU)   echo "CPU/CPU"    ;; MEM)    echo "内存/MEM"   ;;
+    esac
+  else
+    case "$f" in
+      MODEL) echo "MODEL"  ;; CTX)   echo "CTX"    ;;
+      TIME)  echo "TIME"   ;; COST)  echo "COST"   ;;
+      DIFF)  echo "DIFF"   ;; TOKEN) echo "TOKENS" ;;
+      REQ)   echo "REQ"    ;; USAGE) echo "USAGE"  ;;
+      DIR)   echo "DIR"    ;; PATH)  echo "PATH"   ;;
+      BRANCH)echo "BRANCH" ;; VER)   echo "VER"    ;;
+      CPU)   echo "CPU"    ;; MEM)   echo "MEM"    ;;
+    esac
+  fi
+}
+
+field_enabled() {
+  echo "$HUD_FIELDS" | tr ',' '\n' | grep -q "^$1$"
+}
+
+save_config() {
+  cat > "$CONFIG" <<EOF
+HUD_LANG=$HUD_LANG
+HUD_MODE=$HUD_MODE
+HUD_FIELDS=$HUD_FIELDS
+EOF
+}
+
+cmd_lang() {
+  if [ -z "$1" ]; then
+    echo "当前语言: $HUD_LANG"
+    echo "用法: hud lang [zh|en]"
+    return
+  fi
+  if [ "$1" != "zh" ] && [ "$1" != "en" ]; then
+    echo "错误: 语言只支持 zh 或 en"
+    return 1
+  fi
+  HUD_LANG="$1"
+  save_config
+  [ "$1" = "zh" ] && echo "已切换为: 中文" || echo "已切换为: English"
+}
+
+cmd_mode() {
+  if [ -z "$1" ]; then
+    echo "当前模式: $HUD_MODE"
+    echo "用法: hud mode [text|emoji]"
+    return
+  fi
+  if [ "$1" != "text" ] && [ "$1" != "emoji" ]; then
+    echo "错误: 模式只支持 text 或 emoji"
+    return 1
+  fi
+  HUD_MODE="$1"
+  save_config
+  [ "$1" = "emoji" ] && echo "已切换为: emoji 图标模式" || echo "已切换为: text 文字模式"
+}
+
+cmd_fields() {
+  local fields_arr=($ALL_FIELDS)
+  local enabled=()
+  for f in "${fields_arr[@]}"; do
+    field_enabled "$f" && enabled+=("$f") || enabled+=("")
+  done
+
+  while true; do
+    echo ""
+    echo "字段配置（输入编号切换，回车保存）:"
+    echo ""
+    local i=0
+    for f in "${fields_arr[@]}"; do
+      local num=$((i + 1))
+      local check="✗"
+      [ -n "${enabled[$i]}" ] && check="✓"
+      printf "  [%2d]  %s  %s\n" "$num" "$check" "$(field_label "$f")"
+      i=$((i + 1))
+    done
+    echo ""
+    printf "  输入编号（exit 退出不保存）: "
+    read -r input
+    [ -z "$input" ] && break
+    [ "$input" = "exit" ] && echo "  已退出" && return
+    if echo "$input" | grep -qE '^[0-9]+$' && [ "$input" -ge 1 ] && [ "$input" -le "${#fields_arr[@]}" ]; then
+      local idx=$((input - 1))
+      local f="${fields_arr[$idx]}"
+      if [ -n "${enabled[$idx]}" ]; then
+        enabled[$idx]=""
+      else
+        enabled[$idx]="$f"
+      fi
+    else
+      echo "  无效编号，请重新输入"
+    fi
+  done
+
+  local new_fields=""
+  local i=0
+  for f in "${fields_arr[@]}"; do
+    if [ -n "${enabled[$i]}" ]; then
+      [ -n "$new_fields" ] && new_fields+=","
+      new_fields+="$f"
+    fi
+    i=$((i + 1))
+  done
+  HUD_FIELDS="$new_fields"
+  save_config
+  echo "  已保存"
+}
+
+case "$1" in
+  lang)   cmd_lang "$2" ;;
+  mode)   cmd_mode "$2" ;;
+  fields) cmd_fields ;;
+  *)
+    echo "claude-code-prompt-hud CLI"
+    echo ""
+    echo "用法:"
+    echo "  hud lang [zh|en]       切换语言（当前: $HUD_LANG）"
+    echo "  hud mode [text|emoji]  切换显示模式（当前: $HUD_MODE）"
+    echo "  hud fields             交互式配置显示字段"
+    ;;
+esac

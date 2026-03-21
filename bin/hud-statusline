@@ -1,0 +1,92 @@
+#!/bin/bash
+
+BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+CONFIG="$HOME/.claude-code-prompt-hud/config"
+
+[ -f "$CONFIG" ] && source "$CONFIG"
+HUD_LANG=${HUD_LANG:-zh}
+HUD_MODE=${HUD_MODE:-text}
+HUD_MODEL=${HUD_MODEL:-opus}
+HUD_VERSION="v0.1"
+HUD_FIELDS=${HUD_FIELDS:-MODEL,CTX,TIME,COST,DIFF,TOKEN,REQ,USAGE,DIR,PATH,BRANCH,VER,CPU,MEM}
+
+source "$BASE_DIR/lang/${HUD_LANG}.sh"
+source "$BASE_DIR/metrics/git.sh"
+source "$BASE_DIR/metrics/context.sh"
+source "$BASE_DIR/metrics/token.sh"
+source "$BASE_DIR/metrics/cost.sh"
+source "$BASE_DIR/metrics/resource.sh"
+source "$BASE_DIR/metrics/session.sh"
+
+c()  { printf "\e[38;5;%sm" "$1"; }
+rst(){ printf "\e[0m"; }
+
+on() { echo "$HUD_FIELDS" | tr ',' '\n' | grep -q "^$1$"; }
+
+# emoji 图标映射
+emoji_icon() {
+  case "$1" in
+    MODEL)  echo "🤖" ;;
+    CTX)    echo "📄" ;;
+    TIME)   echo "🕙" ;;
+    COST)   echo "💲" ;;
+    DIFF)   echo ""   ;;  # DIFF 特殊处理，无图标前缀
+    TOKEN)  echo "⚡" ;;
+    REQ)    echo "🔄" ;;
+    USAGE)  echo "📊" ;;
+    DIR)    echo "📖" ;;
+    PATH)   echo "📂" ;;
+    BRANCH) echo "⎇ " ;;
+    VER)    echo "🏷️ " ;;
+    CPU)    echo "⚙️ " ;;
+    MEM)    echo "💾" ;;
+  esac
+}
+
+out=""
+
+add() {
+  local field="$1" color="$2" label="$3" value="$4"
+  on "$field" || return
+  [ -n "$out" ] && out+=" $(c 240)｜$(rst) "
+  if [ "$HUD_MODE" = "emoji" ]; then
+    local icon
+    icon=$(emoji_icon "$field")
+    out+="$(c $color)${icon}${value}$(rst)"
+  else
+    out+="$(c $color)${label}:${value}$(rst)"
+  fi
+}
+
+# DIFF 在 emoji 模式下特殊渲染
+add_diff() {
+  on "DIFF" || return
+  [ -n "$out" ] && out+=" $(c 240)｜$(rst) "
+  if [ "$HUD_MODE" = "emoji" ]; then
+    local detail
+    detail=$(git_diff_detail)
+    local added removed
+    added=$(echo "$detail" | grep -oE '\+[0-9]+')
+    removed=$(echo "$detail" | grep -oE '\-[0-9]+')
+    out+="$(c 82)${added}$(rst) $(c 203)${removed}$(rst)"
+  else
+    out+="$(c 203)${L_DIFF}:$(git_changes)$(rst)"
+  fi
+}
+
+add MODEL  84  "${L_MODEL}"  "${HUD_MODEL}"
+add CTX   245  "${L_CTX}"    "$(context_count)"
+add TIME  245  "${L_TIME}"   "$(session_time)"
+add COST  214  "${L_COST}"   "$(session_cost)"
+add_diff
+add TOKEN  81  "${L_TOKEN}"  "$(session_tokens)"
+add REQ   245  "${L_REQ}"    "$(request_count)"
+add USAGE  81  "${L_USAGE}"  "$(token_usage)"
+add DIR   245  "${L_DIR}"    "$(basename "$PWD")"
+add PATH  245  "${L_PATH}"   "${PWD}"
+add BRANCH 75  "${L_BRANCH}" "$(git_branch)"
+add VER   245  "${L_VER}"    "${HUD_VERSION}"
+add CPU   245  "${L_CPU}"    "$(cpu_usage)"
+add MEM   245  "${L_MEM}"    "$(mem_usage)"
+
+printf "%s\n" "$out"
