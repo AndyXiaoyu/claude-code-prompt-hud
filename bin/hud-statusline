@@ -112,4 +112,13 @@ _ucolor=$(usage_bar_color)
 _utime=$(usage_time_display)
 line2+="$(c 240) ｜ $(rst)$(c $_ucolor)${L_USAGEBAR} ${_ubar} ${_upct}%$(rst) $(c 240)(${_utime})$(rst)"
 
+# 7 天窗口（当 HUD_WEEK_TOKEN_MAX>0 且用量 >= HUD_WEEK_THRESHOLD 时显示）
+if should_show_week; then
+  _wpct=$(week_percent)
+  _wbar=$(week_bar)
+  _wcolor=$(week_bar_color)
+  _wdisp=$(week_display)
+  line2+="$(c 240) ｜ $(rst)$(c $_wcolor)${L_WEEKBAR} ${_wbar} ${_wpct}%$(rst) $(c 240)(${_wdisp})$(rst)"
+fi
+
 printf "%s\n" "$line2"
