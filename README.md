@@ -1,20 +1,25 @@
 # claude-code-prompt-hud
 
-A real-time status line for [Claude Code](https://claude.ai/code) — displays live metrics (model, tokens, cost, git, CPU, and more) directly inside the Claude Code interface via the native `statusLine` API.
+A real-time status line for [Claude Code](https://claude.ai/code) — displays live metrics (model, tokens, cost, git, CPU, and more) directly inside the Claude Code interface via the native `statusLine` API. Refreshes every ~300ms.
 
 **第1行 — Text mode:**
 ```
-模型: opus｜上下文: 3｜时长: 12m｜费用: 0.042｜变更: +13 -2｜Token: 4200｜请求: 18｜目录: my-project｜路径: /Users/me/project｜分支: main｜版本: v0.1｜CPU: 23%｜内存: 312891
+模型: claude-sonnet-4-6｜上下文: 3｜时长: 12m｜费用: 0.042｜变更: +13 -2｜Token: 4200｜请求: 18｜目录: my-project｜路径: /Users/me/project｜分支: main｜版本: v0.1｜CPU: 23%｜内存: 312891
 ```
 
 **第1行 — Emoji mode:**
 ```
-🤖 opus｜📄 3｜🕙 12m｜💲 0.042｜+240 -43｜⚡ 4200｜🔄 18｜📂 /Users/me/project｜⎇ main｜🏷️ v0.1｜⚙️ 23%｜💾 312891
+🤖 claude-sonnet-4-6｜📄 3｜🕙 12m｜💲 0.042｜+240 -43｜⚡ 4200｜🔄 18｜📂 /Users/me/project｜⎇ main｜🏷️ v0.1｜⚙️ 23%｜💾 312891
 ```
 
 **第2行 — 进度条（始终显示）：**
 ```
 上下文 ████░░░░░░ 42% (84k/200k) │ 速率 ██░░░░░░░░ 25% (20000/min) │ 用量 █░░░░░░░░░ 15% (45m / 5h)
+```
+
+**第2行 — 7天窗口（用量≥80% 时自动出现，免费/周付账户）：**
+```
+上下文 ████████░░ 85% (170k/200k) │ 速率 ████░░░░░░ 45% (36000/min) │ 用量 ████████░░ 85% (4h 15m / 5h) │ 7天 ██████████ 85% (2d / 7d)
 ```
 
 进度条颜色随用量变化：🟢 绿（<60%）→ 🟡 黄（60-85%）→ 🔴 红（≥85%）
@@ -27,7 +32,7 @@ A real-time status line for [Claude Code](https://claude.ai/code) — displays l
 
 | # | Field | Emoji | Description |
 |---|-------|-------|-------------|
-| 1 | 模型 / MODEL | 🤖 | Current Claude model |
+| 1 | 模型 / MODEL | 🤖 | 从 JSONL 自动检测真实模型名（claude-sonnet-4-6、gpt-4o 等） |
 | 2 | 上下文 / CTX | 📄 | `context/*.md` file count |
 | 3 | 时长 / TIME | 🕙 | Session elapsed time |
 | 4 | 费用 / COST | 💲 | Estimated cost (tokens × $0.00001) |
@@ -45,9 +50,24 @@ A real-time status line for [Claude Code](https://claude.ai/code) — displays l
 
 | 栏目 | 说明 | 上限配置 |
 |------|------|----------|
-| 上下文 | 已用 token / 200k 上下文窗口 | 固定 200k |
+| 上下文 | 已用 token / 上下文窗口（按模型自动推断，支持 200k / 128k / 1M） | 自动 |
 | 速率 | 当前 token/min 速率 / 上限 | `HUD_RATE_MAX`（默认 80000） |
 | 用量 | 会话已用时间 / 窗口时长 | `HUD_SESSION_WINDOW_MIN`（默认 300，即 5h） |
+| 7天 | 过去 7 天 token 用量 / 上限（免费/周付账户专属） | `HUD_WEEK_TOKEN_MAX`（默认不显示） |
+
+> **7天条显示条件**：`HUD_WEEK_TOKEN_MAX` > 0 且当前用量 ≥ `HUD_WEEK_THRESHOLD`（默认 80%）
+
+### 模型上下文窗口自动推断
+
+| 模型 | 上下文窗口 |
+|------|------------|
+| claude-\* | 200k |
+| gpt-4o / gpt-4-turbo | 128k |
+| gpt-4 | 8k |
+| gpt-3.5 | 16k |
+| gemini-1.5 / gemini-2 | 1M |
+| deepseek-\* / qwen-\* | 128k |
+| 其他 | 200k |
 
 ---
 
@@ -70,7 +90,7 @@ source ~/.zshrc
 
 The installer will:
 1. Copy files to `~/.claude-code-prompt-hud`
-2. Register the status line in `~/.claude/settings.json`
+2. Register the status line in `~/.claude/settings.json` (with `intervalMs: 300`)
 3. Add `~/.claude-code-prompt-hud/bin` to `PATH` in `~/.zshrc`
 
 ---
@@ -103,14 +123,18 @@ HUD_FIELDS=MODEL,CTX,TIME,COST,DIFF,TOKEN,REQ,DIR,PATH,BRANCH,VER,CPU,MEM
 
 ### 第2行进度条调参
 
-在 config 文件中添加：
-
 ```bash
 # 速率进度条上限（tokens/min），超过此值显示红色 100%
 HUD_RATE_MAX=80000
 
 # 用量窗口时长（分钟），默认 300 = 5 小时
 HUD_SESSION_WINDOW_MIN=300
+
+# 7天 token 上限（免费/周付账户填写，0 = 不显示此栏）
+HUD_WEEK_TOKEN_MAX=0
+
+# 7天条触发阈值：用量超过此百分比时才显示（默认 80）
+HUD_WEEK_THRESHOLD=80
 ```
 
 ---
@@ -138,14 +162,14 @@ clause-code-prompt-hud/
 │   ├── cost.sh             # 费用估算
 │   ├── git.sh              # Git branch / diff
 │   ├── resource.sh         # CPU / 内存
-│   ├── session.sh          # 会话时长 / 用量进度条
-│   └── token.sh            # Token 计数 / 速率 / 上下文进度条
+│   ├── session.sh          # 会话时长 / 用量进度条 / 7天窗口
+│   └── token.sh            # Token 计数 / 模型检测 / 速率 / 上下文进度条
 ├── graph/
 │   └── token_graph.sh      # ASCII 折线图
 ├── rightpane/
 │   └── files.sh            # 文件监控（tmux 右侧面板）
 ├── sessions/
-│   └── agents.sh           # 活跃 Claude 会话列表
+│   └── agents.sh           # 工具/代理活动解析
 ├── install.sh
 └── uninstall.sh
 ```
@@ -154,12 +178,14 @@ clause-code-prompt-hud/
 
 ## How It Works
 
-Claude Code 的 `statusLine` API 在每次 prompt 刷新时调用 `bin/hud-statusline`，脚本从本地轻量数据源读取：
+Claude Code 的 `statusLine` API 每 300ms 调用一次 `bin/hud-statusline`，脚本从本地轻量数据源读取：
 
 | Data | Source |
 |------|--------|
-| Token count | `~/.claude/projects/*/*.jsonl` |
+| Model name | `~/.claude/projects/*/*.jsonl` (`message.model`) |
+| Token count | `~/.claude/projects/*/*.jsonl` (usage 字段求和) |
 | Request count | `~/.claude/projects/*/*.jsonl` |
+| 7-day tokens | 全部 JSONL 文件，按 `timestamp` 过滤 7 天内 |
 | Session time | `/tmp/claude_hud_session` |
 | Context files | `context/*.md` in `$PWD` |
 | Git branch / diff | `git branch`, `git diff --numstat` |
