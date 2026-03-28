@@ -59,7 +59,10 @@ context_tokens_k() {
   echo "$(( tokens / 1000 ))k/200k"
 }
 
-# 每分钟 token 速率（用于速率限制指示）
+# 每分钟 token 速率
+# HUD_RATE_MAX 为速率上限（tokens/min），默认 80000
+HUD_RATE_MAX=${HUD_RATE_MAX:-80000}
+
 token_rate_per_min() {
   local tokens start now elapsed minutes
   tokens=$(session_tokens)
@@ -68,5 +71,35 @@ token_rate_per_min() {
   elapsed=$(( now - start ))
   minutes=$(( elapsed / 60 ))
   [ "$minutes" -eq 0 ] && echo "-" && return
-  echo "$(( tokens / minutes ))/min"
+  echo "$(( tokens / minutes ))"
+}
+
+rate_percent() {
+  local rate pct
+  rate=$(token_rate_per_min)
+  [ "$rate" = "-" ] && echo 0 && return
+  pct=$(( rate * 100 / HUD_RATE_MAX ))
+  [ "$pct" -gt 100 ] && pct=100
+  echo "$pct"
+}
+
+rate_bar() {
+  local pct filled empty bar i
+  pct=$(rate_percent)
+  filled=$(( pct * 10 / 100 ))
+  [ "$filled" -gt 10 ] && filled=10
+  empty=$(( 10 - filled ))
+  bar=""
+  i=0; while [ $i -lt $filled ]; do bar+="█"; i=$(( i+1 )); done
+  i=0; while [ $i -lt $empty  ]; do bar+="░"; i=$(( i+1 )); done
+  echo "$bar"
+}
+
+rate_bar_color() {
+  local pct
+  pct=$(rate_percent)
+  if   [ "$pct" -ge 85 ]; then echo 196
+  elif [ "$pct" -ge 60 ]; then echo 214
+  else echo 82
+  fi
 }

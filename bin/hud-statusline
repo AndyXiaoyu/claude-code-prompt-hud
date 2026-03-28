@@ -91,15 +91,19 @@ add MEM   245  "${L_MEM}"    "$(mem_usage)"
 printf "%s\n" "$out"
 echo "$PWD" > /tmp/claude_hud_pwd
 
-# 第2行：上下文进度条 + 用量进度条 + 速率
+# 第2行：上下文进度条 + 速率进度条 + 用量进度条
 _pct=$(context_percent)
 _bar=$(context_bar)
 _color=$(context_bar_color)
 _ktok=$(context_tokens_k)
-_rate=$(token_rate_per_min)
 line2="$(c $_color)${L_CTXBAR} ${_bar} ${_pct}%$(rst) $(c 240)(${_ktok})$(rst)"
+
+_rate=$(token_rate_per_min)
 if [ "$_rate" != "-" ]; then
-  line2+="$(c 240) ｜ $(rst)$(c 245)${L_RATE}: ${_rate}$(rst)"
+  _rbar=$(rate_bar)
+  _rcolor=$(rate_bar_color)
+  _rpct=$(rate_percent)
+  line2+="$(c 240) ｜ $(rst)$(c $_rcolor)${L_RATE} ${_rbar} ${_rpct}%$(rst) $(c 240)(${_rate}/min)$(rst)"
 fi
 
 _upct=$(usage_percent)
