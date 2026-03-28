@@ -20,3 +20,53 @@ request_count() {
 token_usage() {
   echo "$(session_tokens)/200k"
 }
+
+# --- 上下文进度条 ---
+CONTEXT_WINDOW_SIZE=200000
+
+context_percent() {
+  local tokens pct
+  tokens=$(session_tokens)
+  pct=$(( tokens * 100 / CONTEXT_WINDOW_SIZE ))
+  [ "$pct" -gt 100 ] && pct=100
+  echo "$pct"
+}
+
+context_bar() {
+  local pct filled empty bar i
+  pct=$(context_percent)
+  filled=$(( pct * 10 / 100 ))
+  [ "$filled" -gt 10 ] && filled=10
+  empty=$(( 10 - filled ))
+  bar=""
+  i=0; while [ $i -lt $filled ]; do bar+="█"; i=$(( i+1 )); done
+  i=0; while [ $i -lt $empty  ]; do bar+="░"; i=$(( i+1 )); done
+  echo "$bar"
+}
+
+context_bar_color() {
+  local pct
+  pct=$(context_percent)
+  if   [ "$pct" -ge 85 ]; then echo 196
+  elif [ "$pct" -ge 60 ]; then echo 214
+  else echo 82
+  fi
+}
+
+context_tokens_k() {
+  local tokens
+  tokens=$(session_tokens)
+  echo "$(( tokens / 1000 ))k/200k"
+}
+
+# 每分钟 token 速率（用于速率限制指示）
+token_rate_per_min() {
+  local tokens start now elapsed minutes
+  tokens=$(session_tokens)
+  start=$(cat /tmp/claude_hud_session 2>/dev/null || date +%s)
+  now=$(date +%s)
+  elapsed=$(( now - start ))
+  minutes=$(( elapsed / 60 ))
+  [ "$minutes" -eq 0 ] && echo "-" && return
+  echo "$(( tokens / minutes ))/min"
+}

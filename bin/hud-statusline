@@ -8,7 +8,7 @@ HUD_LANG=${HUD_LANG:-zh}
 HUD_MODE=${HUD_MODE:-text}
 HUD_MODEL=${HUD_MODEL:-opus}
 HUD_VERSION="v0.1"
-HUD_FIELDS=${HUD_FIELDS:-MODEL,CTX,TIME,COST,DIFF,TOKEN,REQ,USAGE,DIR,PATH,BRANCH,VER,CPU,MEM}
+HUD_FIELDS=${HUD_FIELDS:-MODEL,CTX,TIME,COST,DIFF,TOKEN,REQ,DIR,PATH,BRANCH,VER,CPU,MEM}
 
 source "$BASE_DIR/lang/${HUD_LANG}.sh"
 source "$BASE_DIR/metrics/git.sh"
@@ -81,7 +81,6 @@ add COST  214  "${L_COST}"   "$(session_cost)"
 add_diff
 add TOKEN  81  "${L_TOKEN}"  "$(session_tokens)"
 add REQ   245  "${L_REQ}"    "$(request_count)"
-add USAGE  81  "${L_USAGE}"  "$(token_usage)"
 add DIR   245  "${L_DIR}"    "$(basename "$PWD")"
 add PATH  245  "${L_PATH}"   "${PWD}"
 add BRANCH 75  "${L_BRANCH}" "$(git_branch)"
@@ -91,3 +90,15 @@ add MEM   245  "${L_MEM}"    "$(mem_usage)"
 
 printf "%s\n" "$out"
 echo "$PWD" > /tmp/claude_hud_pwd
+
+# 第2行：上下文进度条 + 速率
+_pct=$(context_percent)
+_bar=$(context_bar)
+_color=$(context_bar_color)
+_ktok=$(context_tokens_k)
+_rate=$(token_rate_per_min)
+line2="$(c $_color)${L_CTXBAR} ${_bar} ${_pct}%$(rst) $(c 240)(${_ktok})$(rst)"
+if [ "$_rate" != "-" ]; then
+  line2+="$(c 240) ｜ $(rst)$(c 245)${L_RATE}: ${_rate}$(rst)"
+fi
+printf "%s\n" "$line2"
