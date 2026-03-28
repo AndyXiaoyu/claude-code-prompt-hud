@@ -64,14 +64,14 @@ context_tokens_k() {
 HUD_RATE_MAX=${HUD_RATE_MAX:-80000}
 
 token_rate_per_min() {
-  local tokens start now elapsed minutes
+  local tokens start now elapsed
   tokens=$(session_tokens)
   start=$(cat /tmp/claude_hud_session 2>/dev/null || date +%s)
   now=$(date +%s)
   elapsed=$(( now - start ))
-  minutes=$(( elapsed / 60 ))
-  [ "$minutes" -eq 0 ] && echo "-" && return
-  echo "$(( tokens / minutes ))"
+  [ "$elapsed" -eq 0 ] && elapsed=1
+  # 换算成每分钟（用秒精度避免短会话除零）
+  echo "$(( tokens * 60 / elapsed ))"
 }
 
 rate_percent() {
