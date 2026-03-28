@@ -24,7 +24,7 @@ if [ -f "$CLAUDE_SETTINGS" ]; then
 import json
 with open('$CLAUDE_SETTINGS') as f:
     s = json.load(f)
-s['statusLine'] = {'command': '$HUD_PATH/bin/hud-statusline', 'padding': 0, 'type': 'command'}
+s['statusLine'] = {'command': '$HUD_PATH/bin/hud-statusline', 'padding': 0, 'type': 'command', 'intervalMs': 300}
 with open('$CLAUDE_SETTINGS', 'w') as f:
     json.dump(s, f, indent=2, ensure_ascii=False)
 "

@@ -74,7 +74,7 @@ add_diff() {
   fi
 }
 
-add MODEL  84  "${L_MODEL}"  "${HUD_MODEL}"
+add MODEL  84  "${L_MODEL}"  "$(detect_model)"
 add CTX   245  "${L_CTX}"    "$(context_count)"
 add TIME  245  "${L_TIME}"   "$(session_time)"
 add COST  214  "${L_COST}"   "$(session_cost)"
