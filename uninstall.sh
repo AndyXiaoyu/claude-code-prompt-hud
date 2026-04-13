@@ -1,7 +1,7 @@
 #!/bin/bash
 
 HUD_PATH="$HOME/.claude-code-prompt-hud"
-CLAUDE_SETTINGS="$HOME/.claude/settings.json"
+CLAUDE_SETTINGS="$HOME/.claude/settings.local.json"
 
 rm -rf "$HUD_PATH"
 
