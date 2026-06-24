@@ -10,6 +10,64 @@ HUD_MODEL=${HUD_MODEL:-opus}
 HUD_VERSION="v0.1"
 HUD_FIELDS=${HUD_FIELDS:-MODEL,CTX,TIME,COST,DIFF,TOKEN,REQ,DIR,PATH,BRANCH,VER,CPU,MEM}
 
+if [ ! -t 0 ]; then
+  HUD_STATUSLINE_INPUT="$(cat)"
+  export HUD_STATUSLINE_INPUT
+fi
+
+if [ -n "$HUD_STATUSLINE_INPUT" ] && command -v python3 >/dev/null 2>&1; then
+  eval "$(
+    python3 - <<'PY'
+import json
+import os
+import shlex
+
+raw = os.environ.get("HUD_STATUSLINE_INPUT", "")
+try:
+    data = json.loads(raw) if raw.strip() else {}
+except Exception:
+    data = {}
+
+def emit(name, value):
+    if value is None or value == "":
+        return
+    print(f"export {name}={shlex.quote(str(value))}")
+
+model = data.get("model")
+if isinstance(model, dict):
+    emit("HUD_STATUS_MODEL", model.get("id") or model.get("display_name") or model.get("name"))
+else:
+    emit("HUD_STATUS_MODEL", model)
+
+emit("HUD_TRANSCRIPT_PATH", data.get("transcript_path"))
+emit("HUD_STATUS_SESSION_ID", data.get("session_id") or data.get("sessionId"))
+
+ctx = data.get("context_window") or {}
+if isinstance(ctx, dict):
+    emit("HUD_CONTEXT_WINDOW_SIZE", ctx.get("context_window_size"))
+    emit("HUD_CONTEXT_USED_PERCENT", ctx.get("used_percentage"))
+    current = ctx.get("current_usage")
+    if isinstance(current, dict):
+        total = 0
+        for key in ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"):
+            try:
+                total += int(current.get(key) or 0)
+            except Exception:
+                pass
+        emit("HUD_CONTEXT_USED_TOKENS", total)
+    else:
+        total = 0
+        for key in ("total_input_tokens", "total_output_tokens"):
+            try:
+                total += int(ctx.get(key) or 0)
+            except Exception:
+                pass
+        if total:
+            emit("HUD_CONTEXT_USED_TOKENS", total)
+PY
+  )"
+fi
+
 source "$BASE_DIR/lang/${HUD_LANG}.sh"
 source "$BASE_DIR/metrics/git.sh"
 source "$BASE_DIR/metrics/context.sh"
@@ -48,7 +106,7 @@ out=""
 add() {
   local field="$1" color="$2" label="$3" value="$4"
   on "$field" || return
-  [ -n "$out" ] && out+="$(c 240)｜$(rst)"
+  [ -n "$out" ] && out+="$(c 255)｜$(rst)"
   if [ "$HUD_MODE" = "emoji" ]; then
     local icon
     icon=$(emoji_icon "$field")
@@ -61,7 +119,7 @@ add() {
 # DIFF 在 emoji 模式下特殊渲染
 add_diff() {
   on "DIFF" || return
-  [ -n "$out" ] && out+="$(c 240)｜$(rst)"
+  [ -n "$out" ] && out+="$(c 255)｜$(rst)"
   if [ "$HUD_MODE" = "emoji" ]; then
     local detail
     detail=$(git_diff_detail)
@@ -74,8 +132,47 @@ add_diff() {
   fi
 }
 
+render_progress_bar() {
+  local pct="$1" color="$2" filled empty bar i
+  filled=$(( pct * 10 / 100 ))
+  [ "$filled" -gt 10 ] && filled=10
+  [ "$filled" -lt 0 ] && filled=0
+  empty=$(( 10 - filled ))
+  bar=""
+  i=0; while [ $i -lt $filled ]; do bar+="$(c "$color")█$(rst)"; i=$(( i+1 )); done
+  i=0; while [ $i -lt $empty  ]; do bar+="$(c 240)░$(rst)"; i=$(( i+1 )); done
+  printf "%s" "$bar"
+}
+
+# CTX 专用：带颜色进度条
+add_ctx() {
+  on "CTX" || return
+  [ -n "$out" ] && out+="$(c 255)｜$(rst)"
+
+  local pct tokens window tokens_display window_display bar color
+  pct=$(context_percent)
+  tokens=$(context_used_tokens)
+  window=$(_get_context_window)
+  tokens_display=$(format_tokens_compact "$tokens")
+  window_display=$(format_tokens_compact "$window")
+
+  # 颜色随用量变化：绿 <60% → 黄 60-85% → 红 ≥85%
+  if   [ "$pct" -ge 85 ]; then color=196
+  elif [ "$pct" -ge 60 ]; then color=214
+  else color=82
+  fi
+
+  bar=$(render_progress_bar "$pct" "$color")
+
+  if [ "$HUD_MODE" = "emoji" ]; then
+    out+="$(emoji_icon CTX) ${bar} $(c $color)${pct}%$(rst) $(c 245)(${tokens_display}/${window_display})$(rst)"
+  else
+    out+="$(c $color)${L_CTX}:$(rst) ${bar} $(c $color)${pct}%$(rst) $(c 245)(${tokens_display}/${window_display})$(rst)"
+  fi
+}
+
 add MODEL  84  "${L_MODEL}"  "$(detect_model)"
-add CTX   245  "${L_CTX}"    "$(context_count)"
+add_ctx
 add TIME  245  "${L_TIME}"   "$(session_time)"
 add COST  214  "${L_COST}"   "$(session_cost)"
 add_diff
@@ -90,35 +187,3 @@ add MEM   245  "${L_MEM}"    "$(mem_usage)"
 
 printf "%s\n" "$out"
 echo "$PWD" > /tmp/claude_hud_pwd
-
-# 第2行：上下文进度条 + 速率进度条 + 用量进度条
-_pct=$(context_percent)
-_bar=$(context_bar)
-_color=$(context_bar_color)
-_ktok=$(context_tokens_k)
-line2="$(c $_color)${L_CTXBAR} ${_bar} ${_pct}%$(rst) $(c 240)(${_ktok})$(rst)"
-
-_rate=$(token_rate_per_min)
-if [ "$_rate" != "-" ]; then
-  _rbar=$(rate_bar)
-  _rcolor=$(rate_bar_color)
-  _rpct=$(rate_percent)
-  line2+="$(c 240) ｜ $(rst)$(c $_rcolor)${L_RATE} ${_rbar} ${_rpct}%$(rst) $(c 240)(${_rate}/min)$(rst)"
-fi
-
-_upct=$(usage_percent)
-_ubar=$(usage_bar)
-_ucolor=$(usage_bar_color)
-_utime=$(usage_time_display)
-line2+="$(c 240) ｜ $(rst)$(c $_ucolor)${L_USAGEBAR} ${_ubar} ${_upct}%$(rst) $(c 240)(${_utime})$(rst)"
-
-# 7 天窗口（当 HUD_WEEK_TOKEN_MAX>0 且用量 >= HUD_WEEK_THRESHOLD 时显示）
-if should_show_week; then
-  _wpct=$(week_percent)
-  _wbar=$(week_bar)
-  _wcolor=$(week_bar_color)
-  _wdisp=$(week_display)
-  line2+="$(c 240) ｜ $(rst)$(c $_wcolor)${L_WEEKBAR} ${_wbar} ${_wpct}%$(rst) $(c 240)(${_wdisp})$(rst)"
-fi
-
-printf "%s\n" "$line2"

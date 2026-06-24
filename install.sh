@@ -37,5 +37,14 @@ if ! grep -q "claude-code-prompt-hud/bin" ~/.zshrc; then
   echo "export PATH=\"\$HOME/.claude-code-prompt-hud/bin:\$PATH\"" >> ~/.zshrc
 fi
 
+# 安装 Claude Code slash commands 到全局目录
+COMMANDS_DIR="$HOME/.claude/commands"
+mkdir -p "$COMMANDS_DIR"
+cp .claude/commands/hud.md "$COMMANDS_DIR/"
+cp .claude/commands/hud-lang.md "$COMMANDS_DIR/"
+cp .claude/commands/hud-mode.md "$COMMANDS_DIR/"
+cp .claude/commands/hud-fields.md "$COMMANDS_DIR/"
+cp .claude/commands/hud-tree.md "$COMMANDS_DIR/"
+
 echo "Installed claude-code-prompt-hud"
 echo "运行 'source ~/.zshrc' 后即可使用 hud 命令"

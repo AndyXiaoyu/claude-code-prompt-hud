@@ -1,4 +1,8 @@
 _latest_jsonl() {
+  if [ -n "$HUD_TRANSCRIPT_PATH" ] && [ -f "$HUD_TRANSCRIPT_PATH" ]; then
+    echo "$HUD_TRANSCRIPT_PATH"
+    return
+  fi
   ls -t ~/.claude/projects/*/*.jsonl 2>/dev/null | head -1
 }
 
@@ -24,6 +28,7 @@ token_usage() {
 # --- 模型自动检测 ---
 detect_model() {
   local jsonl model
+  [ -n "$HUD_STATUS_MODEL" ] && echo "$HUD_STATUS_MODEL" && return
   jsonl=$(_latest_jsonl)
   [ -z "$jsonl" ] && echo "${HUD_MODEL:-unknown}" && return
   model=$(grep -o '"model":"[^"]*"' "$jsonl" 2>/dev/null | tail -1 | grep -o '"[^"]*"$' | tr -d '"')
@@ -64,20 +69,149 @@ model_context_window() {
   esac
 }
 
+_latest_xshell_stats() {
+  local stats_dir="$HOME/.claude/xshell-stats"
+  [ -d "$stats_dir" ] || return
+  if [ -n "$HUD_STATUS_SESSION_ID" ] && [ -f "$stats_dir/$HUD_STATUS_SESSION_ID.json" ]; then
+    echo "$stats_dir/$HUD_STATUS_SESSION_ID.json"
+    return
+  fi
+  ls -t "$stats_dir"/*.json 2>/dev/null | head -1
+}
+
+_context_window_from_stats() {
+  local stats
+  stats=$(_latest_xshell_stats)
+  [ -z "$stats" ] && return
+  python3 - "$stats" <<'PY' 2>/dev/null
+import json
+import sys
+
+try:
+    data = json.load(open(sys.argv[1]))
+    value = data.get("context_window", {}).get("context_window_size")
+    value = int(value)
+    if value > 0:
+        print(value)
+except Exception:
+    pass
+PY
+}
+
+_context_used_tokens_from_stats() {
+  local stats
+  stats=$(_latest_xshell_stats)
+  [ -z "$stats" ] && return
+  python3 - "$stats" <<'PY' 2>/dev/null
+import json
+import sys
+
+try:
+    data = json.load(open(sys.argv[1]))
+    ctx = data.get("context_window", {})
+    current = ctx.get("current_usage")
+    if isinstance(current, dict):
+        total = sum(int(current.get(k) or 0) for k in (
+            "input_tokens",
+            "output_tokens",
+            "cache_creation_input_tokens",
+            "cache_read_input_tokens",
+        ))
+    else:
+        total = int(ctx.get("total_input_tokens") or 0) + int(ctx.get("total_output_tokens") or 0)
+    if total >= 0:
+        print(total)
+except Exception:
+    pass
+PY
+}
+
+_context_percent_from_stats() {
+  local stats
+  stats=$(_latest_xshell_stats)
+  [ -z "$stats" ] && return
+  python3 - "$stats" <<'PY' 2>/dev/null
+import json
+import sys
+
+try:
+    data = json.load(open(sys.argv[1]))
+    value = data.get("context_window", {}).get("used_percentage")
+    if value is None:
+        raise ValueError
+    value = int(value)
+    if value < 0:
+        value = 0
+    if value > 100:
+        value = 100
+    print(value)
+except Exception:
+    pass
+PY
+}
+
+_positive_int_or_empty() {
+  case "$1" in
+    ''|*[!0-9]*) return ;;
+  esac
+  [ "$1" -gt 0 ] && echo "$1"
+}
+
+_nonnegative_int_or_empty() {
+  case "$1" in
+    ''|*[!0-9]*) return ;;
+  esac
+  echo "$1"
+}
+
 # --- 上下文进度条 ---
 _get_context_window() {
-  local model
+  local model window
+  window=$(_positive_int_or_empty "$HUD_CONTEXT_WINDOW_SIZE")
+  [ -n "$window" ] && echo "$window" && return
+  window=$(_context_window_from_stats)
+  [ -n "$window" ] && echo "$window" && return
   model=$(detect_model)
   model_context_window "$model"
 }
 
+context_used_tokens() {
+  local tokens
+  tokens=$(_nonnegative_int_or_empty "$HUD_CONTEXT_USED_TOKENS")
+  [ -n "$tokens" ] && echo "$tokens" && return
+  tokens=$(_context_used_tokens_from_stats)
+  [ -n "$tokens" ] && echo "$tokens" && return
+  session_tokens
+}
+
 context_percent() {
   local tokens window pct
-  tokens=$(session_tokens)
+  pct=$(_nonnegative_int_or_empty "$HUD_CONTEXT_USED_PERCENT")
+  if [ -n "$pct" ]; then
+    [ "$pct" -gt 100 ] && pct=100
+    echo "$pct"
+    return
+  fi
+  pct=$(_context_percent_from_stats)
+  [ -n "$pct" ] && echo "$pct" && return
+  tokens=$(context_used_tokens)
   window=$(_get_context_window)
   pct=$(( tokens * 100 / window ))
   [ "$pct" -gt 100 ] && pct=100
   echo "$pct"
+}
+
+format_tokens_compact() {
+  local value="$1"
+  if [ "$value" -ge 1000000 ]; then
+    if [ $(( value % 1000000 )) -eq 0 ]; then
+      echo "$(( value / 1000000 ))M"
+    else
+      awk "BEGIN {printf \"%.1fM\", $value/1000000}"
+    fi
+  else
+    echo "$(( value / 1000 ))k"
+  fi
 }
 
 context_bar() {
@@ -102,11 +236,10 @@ context_bar_color() {
 }
 
 context_tokens_k() {
-  local tokens window window_k
-  tokens=$(session_tokens)
+  local tokens window
+  tokens=$(context_used_tokens)
   window=$(_get_context_window)
-  window_k=$(( window / 1000 ))
-  echo "$(( tokens / 1000 ))k/${window_k}k"
+  echo "$(format_tokens_compact "$tokens")/$(format_tokens_compact "$window")"
 }
 
 # 每分钟 token 速率

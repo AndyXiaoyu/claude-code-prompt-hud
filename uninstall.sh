@@ -18,4 +18,12 @@ fi
 
 sed -i '' '/claude-code-prompt-hud\/bin/d' ~/.zshrc
 
+# 移除 Claude Code slash commands
+COMMANDS_DIR="$HOME/.claude/commands"
+rm -f "$COMMANDS_DIR/hud.md"
+rm -f "$COMMANDS_DIR/hud-lang.md"
+rm -f "$COMMANDS_DIR/hud-mode.md"
+rm -f "$COMMANDS_DIR/hud-fields.md"
+rm -f "$COMMANDS_DIR/hud-tree.md"
+
 echo "Uninstalled claude-code-prompt-hud"

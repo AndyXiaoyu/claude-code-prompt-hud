@@ -100,14 +100,16 @@ The installer will:
 After install, use the `hud` command to configure:
 
 ```bash
-hud lang zh          # 切换中文（默认）
-hud lang en          # Switch to English
-hud mode text        # Text mode（默认）
-hud mode emoji       # Emoji mode
-hud fields           # 交互式配置显示字段
-hud tree             # 左侧分屏显示目录树
-hud tree right       # 右侧分屏显示目录树
+/hud lang zh          # 切换中文（默认）
+/hud lang en          # Switch to English
+/hud mode text        # Text mode（默认）
+/hud mode emoji       # Emoji mode
+/hud fields           # 交互式配置显示字段
+/hud tree             # 左侧分屏显示目录树
+/hud tree right       # 右侧分屏显示目录树
 ```
+
+以上命令在 Claude Code 中以 `/hud` slash command 形式使用（输入 `/hud` 即可看到提示），也可在任意终端中直接运行 `hud` 命令。
 
 ---
 
@@ -151,6 +153,12 @@ bash uninstall.sh
 
 ```
 clause-code-prompt-hud/
+├── .claude/commands/
+│   ├── hud.md               # /hud 命令入口
+│   ├── hud-lang.md          # /hud-lang 切换语言
+│   ├── hud-mode.md          # /hud-mode 切换模式
+│   ├── hud-fields.md        # /hud-fields 配置字段
+│   └── hud-tree.md          # /hud-tree 目录树
 ├── bin/
 │   ├── hud                 # CLI 入口（lang/mode/fields/tree）
 │   └── hud-statusline      # 状态栏渲染（第1行 + 第2行）
